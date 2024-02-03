@@ -22,10 +22,11 @@ gyro.reset_angle(0)
 start_time = time.time()
 target_time = 52
 
-current_pos = (2.5, 0)
+current_pos = (0.5, 0)
 # current_pos = (0, 0)
 
-slow_speed = 300
+# mm/s
+slow_speed = 600
 fast_speed = 600
 
 fast_turn_speed = 300
@@ -36,17 +37,47 @@ remaining_distance = 0
 degrees_per_tile = 360 * 3.8
 
 def main():
-	move_to(current_pos[0], current_pos[1] + 0.5)
+	# move_to(current_pos[0], current_pos[1] + 0.5)
 	# move_to(3.5, 1.5)
 	# move_to(1.5, 3.5)
 	# move_to(0.5, 3.5)
 	# move_to(1.5, 3.5, run_backwards=True)
 	# move_to(0.5, 1.5)
-	plan_path([current_pos, 
-						(3.5, 1.5), 
-						(1.5, 3.5), 
-						(0.5, 3.5, False, True, 0, 0.3), 
-						(0.5, 1.5, False, True, 0, -0.3)])
+
+	plan_path([current_pos, # Only 90s
+						(0.5, 3.5),
+						(1.5, 3.5),
+						(1.5, 2.5),
+						(2.5, 2.5),
+						(2.5, 3.3),
+						(2.5, 2.5, True),
+						(3.5, 2.5),
+						(3.5, 1.5),
+						(2.7, 1.5),
+						(3.5, 1.5, True),
+						(3.5, 0.5),
+						(1.3, 0.5),
+						(3.5, 0.5, True)])
+	
+	# plan_path([current_pos, # angles wip
+	# 					(0.5, 3.5),
+	# 					(1.3, 3.5),
+	# 					(1.5, 2.5),
+	# 					(2.5, 3.3),
+	# 					(2.5, 2.5, True),
+	# 					(3.5, 2.5),
+	# 					(3.5, 1.5),
+	# 					(2.7, 1.5),
+	# 					(3.5, 1.5, True),
+	# 					(3.5, 0.5),
+	# 					(1.3, 0.5),
+	# 					(3.5, 0.5, True)])
+	
+	# plan_path([current_pos, # Plan C
+	# 					(0.5, 3.5),
+	# 					(1.5, 3.5),
+	# 					(1.5, 0.5),
+	# 					(3.5, 0.5, True)])
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
 
 def approx_equal(a, b, tol): return abs(a - b) < tol
@@ -117,6 +148,7 @@ def plan_path(segments: list):
 	for i in range(1, len(segments)):
 		remaining_distance += math.sqrt((segments[i][0] - segments[i - 1][0])**2 + (segments[i][1] - segments[i - 1][1])**2)
 	
+	print("Starting at", current_pos, "with", remaining_distance, "tiles to go")
 	current_pos = segments[0]
 	for s in segments[1:]: move_to(*s)
 
