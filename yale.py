@@ -22,7 +22,7 @@ gyro.reset_angle(0)
 start_time = time.time()
 target_time = 52
 
-current_pos = (2.5, 0)
+current_pos = (1.5, 0)
 # current_pos = (0, 0)
 
 # mm/s
@@ -34,7 +34,7 @@ slow_turn_speed = 100
 
 remaining_distance = 0
 
-degrees_per_tile = 360 * 4.1
+degrees_per_tile = 360 * 3.8
 
 def main():
 	# move_to(current_pos[0], current_pos[1] + 0.5)
@@ -45,10 +45,9 @@ def main():
 	# move_to(0.5, 1.5)
 
 	plan_path([current_pos, # Only 90s
-						(2.5,.5),
-						(3.5,.5)
-						# (0.5, 1.5),
-						# (1.5, 3.5)
+						(1.5,0.5),
+						(0.5, 1.5),
+						(1.5, 3.5)
 						# (1.5, 2.5),
 						# (2.5, 2.5),
 						# (2.5, 3.3),
