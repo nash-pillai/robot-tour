@@ -1,0 +1,11 @@
+Currently: 0 deg and turning to: 0.0 deg
+Calculating speed with 0 tiles and 51.96400000000001 seconds left
+At (0.5, 0) moving -0.5 to (0.5, 0.5) at 600 deg/s
+
+Currently: 359 deg and turning to: 288.4349488229221 deg
+Traceback (most recent call last):
+  File "/home/robot/robot-tour/main.py", line 153, in <module>
+  File "/home/robot/robot-tour/main.py", line 55, in main
+  File "/home/robot/robot-tour/main.py", line 130, in move_to
+  File "/home/robot/robot-tour/main.py", line 91, in turn_to
+NameError: local variable referenced before assignment

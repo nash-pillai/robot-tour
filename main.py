@@ -36,13 +36,11 @@ turning_pid= {
 }
 
 start_time = time.time()
-target_time = 52
-
-current_pos = (0.5, 0)
+target_time = 59
 
 # mm/s
-slow_speed = 600
-fast_speed = 600
+slow_speed = 200
+fast_speed = 1200
 
 turn_speed = 1
 
@@ -50,17 +48,26 @@ remaining_distance = 0
 
 degrees_per_tile = 360 * 4.1
 
-def main():
-	move_to(current_pos[0], current_pos[1] + 0.5)
-	move_to(3.5, 1.5)
-	move_to(0.5, 2.5)
-	move_to(3.5, 3.5)
-	move_to(0.5, 0.5)
+current_pos = (0.5, 0)
 
-	# plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
-	# 					{"x": 3.5, "y":2.5},
-	# 					{"x": 2.5, "y":1.5, "run_backwards": True},
-	# ])
+def main():
+	# move_to(current_pos[0], current_pos[1] + 0.5)
+
+	# drive_straight(2, 600, 0)
+
+	plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
+		{"x": 0.5, "y": 0},
+		{"x": 0.5, "y": 1.5},
+		{"x": 0.5, "y": 1.5},
+		{"x": 1.5, "y": 1.5},
+		{"x": 1.5, "y": 3.5},
+		{"x": 2.5, "y": 3.5},
+		{"x": 2.5, "y": 0.8},
+		{"x": 2.5, "y": 2.5, "run_backwards": True},
+		{"x": 3.5, "y": 2.5},
+		{"x": 3.5, "y": 0.5},
+
+	])
 
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
 	time.sleep(5)
@@ -115,8 +122,8 @@ def drive_straight(distance, speed, target_angle=None):
 		turning_speed = heading_pid["kp"] * heading_error + heading_pid["ki"] * (heading_error + last_heading_error) + heading_pid["kd"] * (heading_error - last_heading_error)
 		turning_speed = clamp(-500, turning_speed, 500)
 
-		left_motor.run(-speed + turning_speed)
-		right_motor.run(-speed - turning_speed)
+		left_motor.run(-speed * (1 if distance < 0 else -1) + turning_speed)
+		right_motor.run(-speed * (1 if distance < 0 else -1) - turning_speed)
 
 		last_heading_error = heading_error
 
