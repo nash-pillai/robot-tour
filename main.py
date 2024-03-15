@@ -19,11 +19,18 @@ motors = [left_motor, right_motor]
 gyro = GyroSensor(Port.S4, Direction.COUNTERCLOCKWISE)
 gyro.reset_angle(0)
 
+heading_error = 0
+last_heading_error = 0
+heading_pid= {
+	"kp": 20,
+	"ki": 0,
+	"kd": 0
+}
+
 start_time = time.time()
 target_time = 52
 
-current_pos = (2.5, 0)
-# current_pos = (0, 0)
+current_pos = (0.5, 0)
 
 # mm/s
 slow_speed = 600
@@ -37,43 +44,17 @@ remaining_distance = 0
 degrees_per_tile = 360 * 4.1
 
 def main():
-	# move_to(current_pos[0], current_pos[1] + 0.5)
-	# move_to(3.5, 1.5)
-	# move_to(1.5, 3.5)
-	# move_to(0.5, 3.5)
-	# move_to(1.5, 3.5, run_backwards=True)
-	# move_to(0.5, 1.5)
+	move_to(current_pos[0], current_pos[1] + 0.5)
+	move_to(3.5, 1.5)
+	move_to(0.5, 2.5)
+	move_to(3.5, 3.5)
+	move_to(0.5, 0.5)
 
-	plan_path([current_pos, # Only 90s
-						(2.5,.5),
-						(3.5,.5)
-						# (0.5, 1.5),
-						# (1.5, 3.5)
-						# (1.5, 2.5),
-						# (2.5, 2.5),
-						# (2.5, 3.3),
-						# (2.5, 2.5, True),
-])
-	
-	# plan_path([current_pos, # angles wip
-	# 					(0.5, 3.5),
-	# 					(1.3, 3.5),
-	# 					(1.5, 2.5),
-	# 					(2.5, 3.3),
-	# 					(2.5, 2.5, True),
-	# 					(3.5, 2.5),
-	# 					(3.5, 1.5),
-	# 					(2.7, 1.5),
-	# 					(3.5, 1.5, True),
-	# 					(3.5, 0.5),
-	# 					(1.3, 0.5),
-	# 					(3.5, 0.5, True)])
-	
-	# plan_path([current_pos, # Plan C
-	# 					(0.5, 3.5),
-	# 					(1.5, 3.5),
-	# 					(1.5, 0.5),
-	# 					(3.5, 0.5, True)])
+	# plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
+	# 					{"x": 3.5, "y":2.5},
+	# 					{"x": 2.5, "y":1.5, "run_backwards": True},
+	# ])
+
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
 
 def approx_equal(a, b, tol): return abs(a - b) < tol
@@ -105,17 +86,38 @@ def turn_to(target_angle, speed, tol):
 		pass
 		# print("Currently: " + str(get_angle()) + " deg and Turning to: " + str(target_angle) + " deg\r", end="")
 
-	left_motor.stop()
-	right_motor.stop()
+	left_motor.hold()
+	right_motor.hold()
 
+def drive_straight(distance, speed):
+	global heading_error, last_heading_error, heading_pid
+	start_angle = get_angle()
+
+	right_motor.reset_angle(0)
+	left_motor.reset_angle(0)
+
+	while abs(left_motor.angle()) < abs(distance * degrees_per_tile): 
+		heading_error = angle_closest_dir(get_angle(), start_angle)
+		turning_speed = heading_pid["kp"] * heading_error + heading_pid["ki"] * (heading_error + last_heading_error) + heading_pid["kd"] * (heading_error - last_heading_error)
+		turning_speed = clamp(-500, turning_speed, 500)
+
+		left_motor.run(-speed + turning_speed)
+		right_motor.run(-speed - turning_speed)
+
+		last_heading_error = heading_error
+
+	left_motor.hold()
+	right_motor.hold()
 
 def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0, distance_offset=0):
 	global current_pos, remaining_distance
+
+	if (current_pos == (x, y)): return
 	
 	target_angle = math.atan2(y - current_pos[1], x - current_pos[0]) * 360 / (2 * math.pi) - 90 + angle_offset
 	if run_backwards: target_angle += 180
 
-	if time_elapsed()  > target_time * 0.85: turn_to(target_angle, fast_turn_speed, 15)
+	if time_elapsed() > target_time * 0.85: turn_to(target_angle, fast_turn_speed, 15)
 	time.sleep(0.2)
 	turn_to(target_angle, slow_turn_speed, 3)
 
@@ -123,29 +125,21 @@ def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0
 	if not run_backwards: distance *= -1
 	print("At", current_pos, "moving", round(distance, 3), "to", (x, y), "at", round(required_angular_speed(log=True), 3), "deg/s\n")
 
-	target_distance = list(map(lambda m: m.angle() + distance * degrees_per_tile, motors))
-	for m, d in zip(motors, target_distance):
-		m.run_target(required_angular_speed(), d, wait=False)
+	drive_straight(distance, required_angular_speed())
 
-	time.sleep(0.2)
-	while any(map(lambda m: m.speed() != 0, motors)): 
-		pass
-		# print("Currently: " + str(left_motor.angle()) + " deg and Moving to: " + str(target_distance[0]) + " deg\r", end="")
-		# print("Currently: " + str(right_motor.angle()) + " deg and Moving to: " + str(target_distance[1]) + " deg\r", end="")
-		# for m in motors: m.set_speed(80 if target_time_close() else 10)
 	if update_pos: 
 		current_pos = (x, y)
 		remaining_distance -= abs(distance - distance_offset)
 
-def plan_path(segments: list):
+def plan_path(segments: list[dict]):
 	global current_pos, remaining_distance
 
 	remaining_distance = 0
 	for i in range(1, len(segments)):
-		remaining_distance += math.sqrt((segments[i][0] - segments[i - 1][0])**2 + (segments[i][1] - segments[i - 1][1])**2)
+		remaining_distance += math.sqrt((segments[i]["x"] - segments[i - 1]["x"])**2 + (segments[i]["y"] - segments[i - 1]["y"])**2)
 	
 	print("Starting at", current_pos, "with", remaining_distance, "tiles to go")
-	current_pos = segments[0]
-	for s in segments[1:]: move_to(*s)
+	current_pos = (segments[0]["x"], segments[0]["y"])
+	for s in segments[1:]: move_to(**s)
 
 if __name__ == '__main__': main()
