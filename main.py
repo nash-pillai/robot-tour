@@ -36,10 +36,10 @@ turning_pid= {
 }
 
 start_time = time.time()
-target_time = 59
+target_time = 75 + 1
 
 # mm/s
-slow_speed = 200
+slow_speed = 100
 fast_speed = 1200
 
 turn_speed = 1
@@ -60,6 +60,7 @@ def main():
 	# 	turn_to(180, 1, 3)
 	# 	turn_to(270, 1, 3)
 	# 	turn_to(0, 1, 3)
+	ev3.screen.draw_text(0, 0, "Starting!")
 
 	plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
 		{"x": 0.5, "y": 0},
@@ -74,6 +75,7 @@ def main():
 		{"x": 3.5, "y": 0.5},
 	])
 
+	ev3.screen.draw_text(0, 50, "Done! -- " + str(time_elapsed()))
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
 	time.sleep(5)
 
@@ -84,8 +86,8 @@ def time_elapsed(): return time.time() - start_time
 def clamp(minimum, n, maximum): return max(minimum, min(n, maximum))
 
 def required_angular_speed(log=False):
-	if log: print("Calculating speed with", round((remaining_distance + 0.5 * remaining_turns), 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds left")
-	return clamp(slow_speed, (remaining_distance + 0.5 * remaining_turns) * degrees_per_tile / max(target_time - time_elapsed(), 1), fast_speed)
+	if log: print("Calculating speed with", round((remaining_distance + 0.1 * remaining_turns), 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds left")
+	return clamp(slow_speed, (remaining_distance + 0.1 * remaining_turns) * degrees_per_tile / max(target_time - time_elapsed(), 1), fast_speed)
 
 def angle_closest_dir(initial, target):
 	diff = target - initial
@@ -163,7 +165,8 @@ def plan_path(segments: list[dict]):
 	for i in range(1, len(segments)):
 		remaining_distance += math.sqrt((segments[i]["x"] - segments[i - 1]["x"])**2 + (segments[i]["y"] - segments[i - 1]["y"])**2)
 	
-	remaining_turns = len(list(filter(lambda a: a.get("run_backwards") != True, segments[1:])))
+	# remaining_turns = len(list(filter(lambda a: a.get("run_backwards") != True, segments[1:])))
+	remaining_turns = len(segments) - 1
 	print("Starting at", current_pos, "with", remaining_distance, "tiles to go")
 	current_pos = (segments[0]["x"], segments[0]["y"])
 	for s in segments[1:]: move_to(**s)
