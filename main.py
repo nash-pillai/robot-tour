@@ -27,6 +27,14 @@ heading_pid= {
 	"kd": 0
 }
 
+turning_error = 0
+last_turning_error = 0
+turning_pid= {
+	"kp": 20,
+	"ki": 0,
+	"kd": 0
+}
+
 start_time = time.time()
 target_time = 52
 
@@ -36,8 +44,7 @@ current_pos = (0.5, 0)
 slow_speed = 600
 fast_speed = 600
 
-fast_turn_speed = 300
-slow_turn_speed = 100
+turn_speed = 1
 
 remaining_distance = 0
 
@@ -56,6 +63,7 @@ def main():
 	# ])
 
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
+	time.sleep(5)
 
 def approx_equal(a, b, tol): return abs(a - b) < tol
 
@@ -75,29 +83,35 @@ def get_angle(): return gyro.angle() % 360
 
 
 def turn_to(target_angle, speed, tol):
+	global turning_error, last_turning_error, turning_pid
 	target_angle %= 360
-	turning_dir = math.copysign(1, angle_closest_dir(get_angle(), target_angle))
 
-	left_motor.run(speed * turning_dir)
-	right_motor.run(speed * -turning_dir)
-	
 	print("Currently:", str(get_angle()), "deg and turning to:", str(target_angle), "deg")
-	while not approx_equal(get_angle(), target_angle, tol): 
-		pass
-		# print("Currently: " + str(get_angle()) + " deg and Turning to: " + str(target_angle) + " deg\r", end="")
+
+	while not abs(angle_closest_dir(get_angle(), target_angle)) < tol: 
+		turning_error = angle_closest_dir(get_angle(), target_angle)
+		turning_speed = turning_pid["kp"] * turning_error + turning_pid["ki"] * (turning_error + last_turning_error) + turning_pid["kd"] * (turning_error - last_turning_error)
+		turning_speed = clamp(-400, turning_speed, 400)
+
+		left_motor.run(turning_speed * speed)
+		right_motor.run(-turning_speed * speed)
+
+		last_turning_error = turning_error
 
 	left_motor.hold()
 	right_motor.hold()
+	print("Finished Turning, final angle is:", str(get_angle()), "deg")
 
-def drive_straight(distance, speed):
+
+def drive_straight(distance, speed, target_angle=None):
 	global heading_error, last_heading_error, heading_pid
-	start_angle = get_angle()
+	target_angle = target_angle if (target_angle is not None) else get_angle()
 
 	right_motor.reset_angle(0)
 	left_motor.reset_angle(0)
 
 	while abs(left_motor.angle()) < abs(distance * degrees_per_tile): 
-		heading_error = angle_closest_dir(get_angle(), start_angle)
+		heading_error = angle_closest_dir(get_angle(), target_angle)
 		turning_speed = heading_pid["kp"] * heading_error + heading_pid["ki"] * (heading_error + last_heading_error) + heading_pid["kd"] * (heading_error - last_heading_error)
 		turning_speed = clamp(-500, turning_speed, 500)
 
@@ -117,15 +131,13 @@ def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0
 	target_angle = math.atan2(y - current_pos[1], x - current_pos[0]) * 360 / (2 * math.pi) - 90 + angle_offset
 	if run_backwards: target_angle += 180
 
-	if time_elapsed() > target_time * 0.85: turn_to(target_angle, fast_turn_speed, 15)
-	time.sleep(0.2)
-	turn_to(target_angle, slow_turn_speed, 3)
+	turn_to(target_angle, turn_speed, 3)
 
 	distance = math.sqrt((x - current_pos[0])**2 + (y - current_pos[1])**2) + distance_offset
 	if not run_backwards: distance *= -1
 	print("At", current_pos, "moving", round(distance, 3), "to", (x, y), "at", round(required_angular_speed(log=True), 3), "deg/s\n")
 
-	drive_straight(distance, required_angular_speed())
+	drive_straight(distance, required_angular_speed(), target_angle)
 
 	if update_pos: 
 		current_pos = (x, y)
