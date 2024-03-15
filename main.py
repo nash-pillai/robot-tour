@@ -45,15 +45,21 @@ fast_speed = 1200
 turn_speed = 1
 
 remaining_distance = 0
+remaining_turns = 0
 
-degrees_per_tile = 360 * 4.1
+degrees_per_tile = 360 * 2.85
 
 current_pos = (0.5, 0)
 
 def main():
 	# move_to(current_pos[0], current_pos[1] + 0.5)
 
-	# drive_straight(2, 600, 0)
+	# drive_straight(-4, 600, 0)
+	# for i in range(3):
+	# 	turn_to(90, 1, 3)
+	# 	turn_to(180, 1, 3)
+	# 	turn_to(270, 1, 3)
+	# 	turn_to(0, 1, 3)
 
 	plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
 		{"x": 0.5, "y": 0},
@@ -66,7 +72,6 @@ def main():
 		{"x": 2.5, "y": 2.5, "run_backwards": True},
 		{"x": 3.5, "y": 2.5},
 		{"x": 3.5, "y": 0.5},
-
 	])
 
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
@@ -79,8 +84,8 @@ def time_elapsed(): return time.time() - start_time
 def clamp(minimum, n, maximum): return max(minimum, min(n, maximum))
 
 def required_angular_speed(log=False):
-	if log: print("Calculating speed with", round(remaining_distance, 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds left")
-	return clamp(slow_speed, remaining_distance * degrees_per_tile / max(target_time - time_elapsed(), 1), fast_speed)
+	if log: print("Calculating speed with", round((remaining_distance + 0.5 * remaining_turns), 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds left")
+	return clamp(slow_speed, (remaining_distance + 0.5 * remaining_turns) * degrees_per_tile / max(target_time - time_elapsed(), 1), fast_speed)
 
 def angle_closest_dir(initial, target):
 	diff = target - initial
@@ -90,7 +95,7 @@ def get_angle(): return gyro.angle() % 360
 
 
 def turn_to(target_angle, speed, tol):
-	global turning_error, last_turning_error, turning_pid
+	global turning_error, last_turning_error, turning_pid, remaining_turns
 	target_angle %= 360
 
 	print("Currently:", str(get_angle()), "deg and turning to:", str(target_angle), "deg")
@@ -107,6 +112,7 @@ def turn_to(target_angle, speed, tol):
 
 	left_motor.hold()
 	right_motor.hold()
+	remaining_turns -= 1
 	print("Finished Turning, final angle is:", str(get_angle()), "deg")
 
 
@@ -151,12 +157,13 @@ def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0
 		remaining_distance -= abs(distance - distance_offset)
 
 def plan_path(segments: list[dict]):
-	global current_pos, remaining_distance
+	global current_pos, remaining_distance, remaining_turns
 
 	remaining_distance = 0
 	for i in range(1, len(segments)):
 		remaining_distance += math.sqrt((segments[i]["x"] - segments[i - 1]["x"])**2 + (segments[i]["y"] - segments[i - 1]["y"])**2)
 	
+	remaining_turns = len(list(filter(lambda a: a.get("run_backwards") != True, segments[1:])))
 	print("Starting at", current_pos, "with", remaining_distance, "tiles to go")
 	current_pos = (segments[0]["x"], segments[0]["y"])
 	for s in segments[1:]: move_to(**s)
