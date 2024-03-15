@@ -6,8 +6,6 @@ from pybricks.parameters import Port, Direction
 
 import math
 
-# import numpy as np
-
 import time
 
 ev3 = EV3Brick()
@@ -21,7 +19,7 @@ gyro.reset_angle(0)
 
 heading_error = 0
 last_heading_error = 0
-heading_pid= {
+heading_pid = {
 	"kp": 20,
 	"ki": 0,
 	"kd": 0
@@ -29,14 +27,14 @@ heading_pid= {
 
 turning_error = 0
 last_turning_error = 0
-turning_pid= {
+turning_pid = {
 	"kp": 20,
 	"ki": 0,
 	"kd": 0
 }
 
 start_time = time.time()
-target_time = 75 + 1
+target_time = 50 + 1
 
 # mm/s
 slow_speed = 100
@@ -49,35 +47,35 @@ remaining_turns = 0
 
 degrees_per_tile = 360 * 2.85
 
-current_pos = (0.5, 0)
+current_pos = (2.5, 0)
 
 def main():
-	# move_to(current_pos[0], current_pos[1] + 0.5)
-
-	# drive_straight(-4, 600, 0)
-	# for i in range(3):
-	# 	turn_to(90, 1, 3)
-	# 	turn_to(180, 1, 3)
-	# 	turn_to(270, 1, 3)
-	# 	turn_to(0, 1, 3)
 	ev3.screen.draw_text(0, 0, "Starting!")
 
+	# move_to(current_pos[0], current_pos[1] + 0.5)
+
 	plan_path([{"x": current_pos[0], "y": current_pos[1]}, # Only 90s
-		{"x": 0.5, "y": 0},
-		{"x": 0.5, "y": 1.5},
-		{"x": 0.5, "y": 1.5},
-		{"x": 1.5, "y": 1.5},
-		{"x": 1.5, "y": 3.5},
-		{"x": 2.5, "y": 3.5},
-		{"x": 2.5, "y": 0.8},
-		{"x": 2.5, "y": 2.5, "run_backwards": True},
+		{"x": 2.5, "y": 1.5},
+		{"x": 3.5, "y": 1.5},
+		{"x": 3.5, "y": 0.8},
+		{"x": 3.5, "y": 1.5, "run_backwards": True},
+		{"x": 2.5, "y": 1.5},
+		{"x": 2.5, "y": 2.5},
 		{"x": 3.5, "y": 2.5},
-		{"x": 3.5, "y": 0.5},
+		{"x": 3.5, "y": 3.5},
+		{"x": 0.8, "y": 3.5},
+		{"x": 1.5, "y": 3.5, "run_backwards": True},
+		{"x": 1.5, "y": 1.5},
+		{"x": 0.5, "y": 1.5},
+		{"x": 0.5, "y": 0.8},
+		{"x": 0.5, "y": 1.5, "run_backwards": True},
+		{"x": 1.5, "y": 1.5},
+		{"x": 1.5, "y": 0.5},
 	])
 
 	ev3.screen.draw_text(0, 50, "Done! -- " + str(time_elapsed()))
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
-	time.sleep(5)
+	time.sleep(10)
 
 def approx_equal(a, b, tol): return abs(a - b) < tol
 
@@ -86,7 +84,7 @@ def time_elapsed(): return time.time() - start_time
 def clamp(minimum, n, maximum): return max(minimum, min(n, maximum))
 
 def required_angular_speed(log=False):
-	if log: print("Calculating speed with", round((remaining_distance + 0.1 * remaining_turns), 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds left")
+	if log: print("Calculating speed with", round(remaining_distance, 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds and", remaining_turns, "turns left")
 	return clamp(slow_speed, (remaining_distance + 0.1 * remaining_turns) * degrees_per_tile / max(target_time - time_elapsed(), 1), fast_speed)
 
 def angle_closest_dir(initial, target):
