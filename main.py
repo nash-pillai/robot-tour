@@ -8,6 +8,10 @@ import math
 
 import time
 
+# import sys
+# sys.stdout = open('logs.txt','at')
+# print()
+
 ev3 = EV3Brick()
 
 right_motor = Motor(Port.D)
@@ -72,11 +76,14 @@ def main():
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
 	time.sleep(10)
 
-def approx_equal(a, b, tol): return abs(a - b) < tol
+def approx_equal(a, b, tol):
+	return abs(a - b) < tol
 
-def time_elapsed(): return time.time() - start_time
+def time_elapsed():
+	return time.time() - start_time
 
-def clamp(minimum, n, maximum): return max(minimum, min(n, maximum))
+def clamp(minimum, n, maximum):
+	return max(minimum, min(n, maximum))
 
 def required_angular_speed(log=False):
 	if log: print("Calculating speed with", round(remaining_distance, 3), "tiles and", round(target_time - time_elapsed(), 3), "seconds and", remaining_turns, "turns left")
@@ -134,10 +141,12 @@ def drive_straight(distance, speed, target_angle=None):
 def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0, distance_offset=0):
 	global current_pos, remaining_distance
 
-	if (current_pos == (x, y)): return
+	if (current_pos == (x, y)):
+		return
 	
 	target_angle = math.atan2(y - current_pos[1], x - current_pos[0]) * 360 / (2 * math.pi) - 90 + angle_offset
-	if run_backwards: target_angle += 180
+	if run_backwards:
+		target_angle += 180
 
 	turn_to(target_angle, turn_speed, 3)
 

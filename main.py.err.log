@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/home/robot/robot-tour/main.py", line 171, in <module>
-  File "/home/robot/robot-tour/main.py", line 74, in main
-  File "/home/robot/robot-tour/main.py", line 166, in plan_path
-TypeError: object of type 'filter' has no len()
