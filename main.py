@@ -18,7 +18,7 @@ right_motor = Motor(Port.D)
 left_motor = Motor(Port.A)
 motors = [left_motor, right_motor]
 
-gyro = GyroSensor(Port.S4, Direction.COUNTERCLOCKWISE)
+gyro = GyroSensor(Port.S1, Direction.COUNTERCLOCKWISE)
 gyro.reset_angle(0)
 
 heading_error = 0
@@ -38,7 +38,7 @@ turning_pid = {
 }
 
 start_time = time.time()
-target_time = 59 + 1
+target_time = 80
 
 # mm/s
 slow_speed = 100
@@ -51,25 +51,26 @@ remaining_turns = 0
 
 degrees_per_tile = 360 * 2.85
 
-current_pos = (0.5, 0)
+current_pos = (3.5, 0)
 
 def main():
 	ev3.screen.draw_text(0, 0, "Starting!")
 
 	plan_path([{"x": current_pos[0], "y": current_pos[1]},
-		{"x": 0.5, "y": 0.5}, # Move onto Field
+		{"x": 3.5, "y": 0.5}, # Move onto Field
+		{"x": 4.5, "y": 0.5},
+		{"x": 4.5, "y": 3.5}, # Gate
+		{"x": 2.5, "y": 3.5},
+		{"x": 2.5, "y": 2.5},
+		# {"x": 0.5, "y": 2.5},
+		{"x": 0.5, "y": 3.2}, # Gate
+		{"x": 0.5, "y": 1.5, "run_backwards": True},
+		# {"x": 1.5, "y": 1.5},
+		# {"x": 1.5, "y": 0.5},
 		{"x": 2.5, "y": 0.5},
-		{"x": 2.5, "y": 1.3}, # Gate B
-		{"x": 2.5, "y": 0.5, "run_backwards": True},
-		{"x": 3.5, "y": 0.5}, # Gate D
-		{"x": 3.5, "y": 2.5},
-		{"x": 2.7, "y": 2.5}, # Gate C
-		{"x": 2.0, "y": 3.5},
-		{"x": 0.5, "y": 3.5},
-		{"x": 0.5, "y": 2.5},
-		{"x": 1.3, "y": 2.5}, # Gate A
-		{"x": 0.5, "y": 2.5, "run_backwards": True},
-		{"x": 0.5, "y": 3.5}, # End
+		{"x": 2.5, "y": 1.5},
+		{"x": 3.5, "y": 1.5},
+		{"x": 3.5, "y": 0.5},
 	])
 
 	ev3.screen.draw_text(0, 50, "Done! -- " + str(time_elapsed()))
