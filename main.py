@@ -26,7 +26,7 @@ last_heading_error = 0
 heading_pid = {
 	"kp": 20,
 	"ki": 0,
-	"kd": 0
+	"kd": 4
 }
 
 turning_error = 0
@@ -34,11 +34,11 @@ last_turning_error = 0
 turning_pid = {
 	"kp": 20,
 	"ki": 0,
-	"kd": 0
+	"kd": 4
 }
 
 start_time = time.time()
-target_time = 80
+target_time = 58 - .4
 
 # mm/s
 slow_speed = 100
@@ -51,31 +51,33 @@ remaining_turns = 0
 
 degrees_per_tile = 360 * 2.85
 
-current_pos = (3.5, 0)
+current_pos = (3, 0.5)
 
 def main():
 	ev3.screen.draw_text(0, 0, "Starting!")
 
-	plan_path([{"x": current_pos[0], "y": current_pos[1]},
-		{"x": 3.5, "y": 0.5}, # Move onto Field
-		{"x": 4.5, "y": 0.5},
-		{"x": 4.5, "y": 3.5}, # Gate
-		{"x": 2.5, "y": 3.5},
-		{"x": 2.5, "y": 2.5},
-		# {"x": 0.5, "y": 2.5},
-		{"x": 0.5, "y": 3.2}, # Gate
-		{"x": 0.5, "y": 1.5, "run_backwards": True},
-		# {"x": 1.5, "y": 1.5},
-		# {"x": 1.5, "y": 0.5},
-		{"x": 2.5, "y": 0.5},
-		{"x": 2.5, "y": 1.5},
-		{"x": 3.5, "y": 1.5},
-		{"x": 3.5, "y": 0.5},
-	])
+	# Add types to this variable
+	path = [
+		# Initial Position
+		{"x": current_pos[0], "y": current_pos[1]},
+		{"x": 3, "y": 2},
+		{"x": 1, "y": 2},
+		{"x": 2.5, "y": 2},
+		{"x": 3.5, "y": 1},
+		{"x": 4.5, "y": 2},
+		{"x": 5, "y": 1.3},
+		{"x": 5, "y": 4},
+		{"x": 4, "y": 4},
+		{"x": 3.5, "y": 3},
+		{"x": 2.5, "y": 4},
+		{"x": 2, "y": 4},
+	]
+	path = list(map(lambda point: dict(list(point.items()) + [["x", point["x"] - 0.5], ["y", point["y"] - 0.5]]), path))
+	plan_path(path)
 
 	ev3.screen.draw_text(0, 50, "Done! -- " + str(time_elapsed()))
 	print("Done!\n Time taken:", time.time() - start_time, "seconds (target:", target_time, "seconds)")
-	time.sleep(10)
+	time.sleep(20)
 
 def approx_equal(a, b, tol):
 	return abs(a - b) < tol
@@ -103,7 +105,7 @@ def turn_to(target_angle, speed, tol):
 
 	print("Currently:", str(get_angle()), "deg and turning to:", str(target_angle), "deg")
 
-	while not abs(angle_closest_dir(get_angle(), target_angle)) < tol: 
+	while not abs(angle_closest_dir(get_angle(), target_angle)) < tol:
 		turning_error = angle_closest_dir(get_angle(), target_angle)
 		turning_speed = turning_pid["kp"] * turning_error + turning_pid["ki"] * (turning_error + last_turning_error) + turning_pid["kd"] * (turning_error - last_turning_error)
 		turning_speed = clamp(-400, turning_speed, 400)
@@ -126,7 +128,7 @@ def drive_straight(distance, speed, target_angle=None):
 	right_motor.reset_angle(0)
 	left_motor.reset_angle(0)
 
-	while abs(left_motor.angle()) < abs(distance * degrees_per_tile): 
+	while abs(left_motor.angle()) < abs(distance * degrees_per_tile):
 		heading_error = angle_closest_dir(get_angle(), target_angle)
 		turning_speed = heading_pid["kp"] * heading_error + heading_pid["ki"] * (heading_error + last_heading_error) + heading_pid["kd"] * (heading_error - last_heading_error)
 		turning_speed = clamp(-500, turning_speed, 500)
@@ -144,7 +146,7 @@ def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0
 
 	if (current_pos == (x, y)):
 		return
-	
+
 	target_angle = math.atan2(y - current_pos[1], x - current_pos[0]) * 360 / (2 * math.pi) - 90 + angle_offset
 	if run_backwards:
 		target_angle += 180
@@ -157,17 +159,19 @@ def move_to(x: int, y: int, run_backwards=False, update_pos=True, angle_offset=0
 
 	drive_straight(distance, required_angular_speed(), target_angle)
 
-	if update_pos: 
+	if update_pos:
 		current_pos = (x, y)
 		remaining_distance -= abs(distance - distance_offset)
 
 def plan_path(segments: list[dict]):
 	global current_pos, remaining_distance, remaining_turns
 
+	print("Path:")
 	remaining_distance = 0
 	for i in range(1, len(segments)):
+		print("Segment", i, ":", segments[i])
 		remaining_distance += math.sqrt((segments[i]["x"] - segments[i - 1]["x"])**2 + (segments[i]["y"] - segments[i - 1]["y"])**2)
-	
+
 	# remaining_turns = len(list(filter(lambda a: a.get("run_backwards") != True, segments[1:])))
 	remaining_turns = len(segments) - 1
 	print("Starting at", current_pos, "with", remaining_distance, "tiles to go")

@@ -12,5 +12,6 @@ gyro.reset_angle(0)
 
 while True:
   ev3.screen.draw_text(0, 50, "Angle: " + str(gyro.angle()))
+  print("Angle: " + str(gyro.angle()), end="\r")
   time.sleep(.1)
   ev3.screen.clear()
